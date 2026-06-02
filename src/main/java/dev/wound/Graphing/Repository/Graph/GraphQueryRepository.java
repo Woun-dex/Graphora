@@ -38,4 +38,15 @@ public interface GraphQueryRepository extends Neo4jRepository<GraphNode, UUID> {
             """)
     List<CentralNode> findBottlenecks();
 
+    @Query("""
+            MATCH (node:Entity)
+            WHERE node.graphKey = $graphKey
+            OPTIONAL MATCH (node)-[r:DEPENDS_ON]-()
+            WITH node, count(r) AS degree
+            RETURN node.name AS name, toFloat(degree) AS score
+            ORDER BY score DESC
+            LIMIT 5
+            """)
+    List<CentralNode> findBottlenecksInGraph(UUID graphKey);
+
 }

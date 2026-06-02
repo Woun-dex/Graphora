@@ -3,11 +3,13 @@ package dev.wound.Graphing.Service;
 import dev.wound.Graphing.Entity.GraphNode;
 import dev.wound.Graphing.Entity.NodeType;
 import dev.wound.Graphing.Entity.SimulationEventType;
+import dev.wound.Graphing.Entity.Workspace;
 import dev.wound.Graphing.MappingEvent.SimulationInput;
 import dev.wound.Graphing.MappingEvent.SimulationResult;
 import dev.wound.Graphing.Repository.Graph.CentralNode;
 import dev.wound.Graphing.Repository.Graph.GraphNodeRepository;
 import dev.wound.Graphing.Repository.Graph.GraphQueryRepository;
+import dev.wound.Graphing.Repository.Users.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,28 +23,40 @@ public class SimulationService {
 
     private final GraphNodeRepository nodeRepo;
     private final GraphQueryRepository queryRepo;
+    private final WorkspaceRepository workspaceRepo;
 
     public SimulationResult runSimulation(SimulationInput input) {
-        // Throw exception if the database is empty
-        long nodeCount = nodeRepo.count();
-        if (nodeCount == 0) {
-            throw new IllegalArgumentException("No nodes found in the database. Simulation cannot be performed.");
+        // Fetch workspace and validate
+        if (input.getWorkspaceId() == null || input.getWorkspaceId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Workspace ID is required to run the simulation.");
+        }
+        Workspace workspace = workspaceRepo.findById(input.getWorkspaceId()).orElse(null);
+        if (workspace == null) {
+            throw new IllegalArgumentException("Workspace with ID " + input.getWorkspaceId() + " not found.");
+        }
+        UUID graphId = workspace.getGraphId();
+        if (graphId == null) {
+            throw new IllegalArgumentException("Workspace with ID " + input.getWorkspaceId() + " does not have an associated graph.");
+        }
+
+        // Fetch nodes belonging to the workspace graph
+        List<GraphNode> workspaceNodes = nodeRepo.findByGraphKey(graphId);
+        if (workspaceNodes.isEmpty()) {
+            throw new IllegalArgumentException("No nodes found in the workspace graph. Simulation cannot be performed.");
         }
 
         // Dynamically find trigger node
         GraphNode triggerNode = null;
         if (input.getTriggerNode() != null) {
             triggerNode = nodeRepo.findById(input.getTriggerNode()).orElse(null);
+            if (triggerNode != null && !graphId.equals(triggerNode.getGraphKey())) {
+                throw new IllegalArgumentException("The specified trigger node does not belong to the selected workspace.");
+            }
         }
 
-        // If trigger ID is not found or not provided, pick the first available node dynamically
+        // If trigger ID is not found or not provided, pick the first available node dynamically in the workspace
         if (triggerNode == null) {
-            List<GraphNode> allNodes = nodeRepo.findAll();
-            if (!allNodes.isEmpty()) {
-                triggerNode = allNodes.get(0);
-            } else {
-                throw new IllegalArgumentException("No nodes found in the database. Simulation cannot be performed.");
-            }
+            triggerNode = workspaceNodes.get(0);
         }
 
         String triggerName = triggerNode.getName();
@@ -82,8 +96,8 @@ public class SimulationService {
             TraversalState current = queue.poll();
             maxDepth = Math.max(maxDepth, current.depth);
 
-            // Fetch incoming dependants (nodes that point to current node)
-            List<GraphNode> dependents = nodeRepo.findDependentsOfNode(current.node.getId());
+            // Fetch incoming dependants (nodes that point to current node) belonging to the same workspace graph
+            List<GraphNode> dependents = nodeRepo.findDependentsOfNodeInGraph(current.node.getId(), graphId);
 
             for (GraphNode dep : dependents) {
                 if (affectedNames.contains(dep.getName()) || current.depth >= 4) {
@@ -163,7 +177,7 @@ public class SimulationService {
         );
 
         // 3. System Insights dynamically from actual graph topology
-        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(triggerName);
+        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(triggerName, graphId);
 
         List<String> riskHotspots = new ArrayList<>();
         for (SimulationResult.AffectedNode an : affectedList) {
@@ -267,10 +281,10 @@ public class SimulationService {
         return "LOW";
     }
 
-    private List<SimulationResult.BottleneckNode> buildBottlenecks(String triggerName) {
+    private List<SimulationResult.BottleneckNode> buildBottlenecks(String triggerName, UUID graphId) {
         List<SimulationResult.BottleneckNode> bottlenecks = new ArrayList<>();
         try {
-            List<CentralNode> centralNodes = queryRepo.findBottlenecks();
+            List<CentralNode> centralNodes = queryRepo.findBottlenecksInGraph(graphId);
             if (centralNodes != null) {
                 for (CentralNode cn : centralNodes) {
                     if (bottlenecks.size() >= 3) break;

@@ -29,4 +29,7 @@ public interface GraphNodeRepository extends Neo4jRepository<GraphNode, UUID> {
     @Query("MATCH (node:Entity) WHERE node.graphKey = $graphKey AND NOT (node)-[:DEPENDS_ON]-() RETURN node")
     List<GraphNode> findOrphanNodes(UUID graphKey);
 
+    @Query("MATCH (dependent:Entity)-[:DEPENDS_ON]->(node:Entity) WHERE node.id = $nodeId AND dependent.graphKey = $graphKey RETURN dependent")
+    List<GraphNode> findDependentsOfNodeInGraph(UUID nodeId, UUID graphKey);
+
 }

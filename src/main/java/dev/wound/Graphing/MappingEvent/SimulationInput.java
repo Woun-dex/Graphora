@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 public class SimulationInput {
 
+    private String workspaceId;
     private UUID triggerNode;
     private SimulationEventType eventType;
     private float severity;

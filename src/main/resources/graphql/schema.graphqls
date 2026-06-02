@@ -174,7 +174,8 @@ type BottleneckNode {
 }
 
 input SimulationInput {
-  triggerNode: ID!
+  workspaceId: ID!
+  triggerNode: ID
   eventType: SimulationEventType!
   severity: Float!
 }
