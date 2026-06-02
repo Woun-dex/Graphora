@@ -1,0 +1,17 @@
+package dev.wound.Graphing.Entity;
+
+public enum SimulationEventType {
+    SUPPLY_DISRUPTION,
+    RESOURCE_SHORTAGE,
+    FACTORY_SHUTDOWN,
+    LOGISTICS_DELAY,
+    PORT_CLOSURE,
+    TRANSPORT_FAILURE,
+
+    MARKET_CRASH,
+    DEMAND_SURGE,
+    DEMAND_DROP,
+    PRICE_INCREASE,
+    PRICE_DECREASE,
+    CUSTOM
+    }
