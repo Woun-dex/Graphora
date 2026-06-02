@@ -1,0 +1,180 @@
+enum NodeType {
+  COMPANY
+  COUNTRY
+  SUPPLIER
+  RESOURCE
+  MARKET
+  PRODUCT
+}
+
+enum RelationshipType {
+  DEPENDS_ON
+  SUPPLIES_TO
+  COMPETES_WITH
+  OPERATES_IN
+  OWNS
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Workspace {
+  id: ID!
+  name: String!
+  participants: [ID!]!
+  graphId: ID!
+}
+
+type GraphNode {
+  id: ID!
+  name: String!
+  type: NodeType!
+  graphKey: ID!
+  dependencies: [GraphEdge!]!
+}
+
+type GraphEdge {
+  id: ID
+  edgeId: ID!
+  fromNodeId: ID!
+  toNodeId: ID!
+  relationshipType: RelationshipType!
+  weight: Float
+  riskFactor: Float
+  target: GraphNode
+}
+
+type ImpactProjection {
+  name: String!
+  impactScore: Float!
+}
+
+type Query {
+  # User Queries
+  getUserById(id: ID!): User
+  getUserByName(name: String!): User
+  getAllUsers: [User!]!
+
+  # Workspace Queries
+  getWorkspaceById(id: ID!): Workspace
+  getAllWorkspaces: [Workspace!]!
+  getWorkspacesForUser(userId: ID!): [Workspace!]!
+
+  # Graph Node Queries
+  getNodeById(id: ID!): GraphNode
+  getNodeByName(name: String!): GraphNode
+  getNodesByGraph(graphKey: ID!): [GraphNode!]!
+  getDependents(nodeId: ID!): [GraphNode!]!
+  getDependencies(nodeId: ID!): [GraphNode!]!
+  getNodesByGraphAndType(graphKey: ID!, type: NodeType!): [GraphNode!]!
+  getOrphanNodes(graphKey: ID!): [GraphNode!]!
+
+  # Advanced Queries
+  calculateImpact(nodeName: String!): [ImpactProjection!]!
+}
+
+type Mutation {
+  # User Mutations
+  createUser(name: String!): User!
+  updateUser(id: ID!, name: String!): User!
+  deleteUser(id: ID!): Boolean!
+
+  # Workspace Mutations
+  createWorkspace(name: String!): Workspace!
+  updateWorkspaceName(id: ID!, name: String!): Workspace!
+  deleteWorkspace(id: ID!): Boolean!
+  addParticipant(workspaceId: ID!, participantId: ID!): Workspace!
+  removeParticipant(workspaceId: ID!, participantId: ID!): Workspace!
+
+  # Graph Node Mutations
+  createNode(name: String!, type: NodeType!, graphKey: ID!): GraphNode!
+  updateNode(id: ID!, name: String!, type: NodeType!): GraphNode!
+  deleteNode(id: ID!): Boolean!
+
+  # Graph Edge Mutations
+  addEdge(fromNodeId: ID!, toNodeId: ID!, type: RelationshipType!, weight: Float, riskFactor: Float): GraphNode!
+  removeEdge(fromNodeId: ID!, toNodeId: ID!): GraphNode!
+
+  # Simulation Mutations
+  runSimulation(input: SimulationInput!): SimulationResult!
+}
+
+enum SimulationEventType {
+  SUPPLY_DISRUPTION
+  RESOURCE_SHORTAGE
+  FACTORY_SHUTDOWN
+  LOGISTICS_DELAY
+  PORT_CLOSURE
+  TRANSPORT_FAILURE
+  MARKET_CRASH
+  DEMAND_SURGE
+  DEMAND_DROP
+  PRICE_INCREASE
+  PRICE_DECREASE
+  CUSTOM
+}
+
+type SimulationResult {
+  event: SimulationEvent!
+  impactAnalysis: ImpactAnalysis!
+  affectedNodes: [AffectedNode!]!
+  criticalPaths: [CriticalPath!]!
+  systemInsights: SystemInsights!
+}
+
+type SimulationEvent {
+  id: ID!
+  type: SimulationEventType!
+  triggerNode: String!
+  severity: Float!
+  timestamp: String!
+}
+
+type ImpactAnalysis {
+  totalAffectedNodes: Int!
+  maxDepth: Int!
+  avgDependencyStrength: Float!
+}
+
+type AffectedNode {
+  node: String!
+  type: String!
+  impactScore: Float!
+  riskLevel: String!
+  exposurePath: [ExposureEdge!]!
+  alternativePaths: Int!
+  mitigationScore: Float!
+}
+
+type ExposureEdge {
+  from: String!
+  to: String!
+  weight: Float!
+}
+
+type CriticalPath {
+  pathId: ID!
+  nodes: [String!]!
+  strength: Float!
+  type: String!
+}
+
+type SystemInsights {
+  bottleneckNodes: [BottleneckNode!]!
+  riskHotspots: [String!]!
+  resilienceScore: Float!
+}
+
+type BottleneckNode {
+  name: String!
+  centralityScore: Float!
+  failureImpactRadius: Float!
+}
+
+input SimulationInput {
+  triggerNode: ID!
+  eventType: SimulationEventType!
+  severity: Float!
+}
