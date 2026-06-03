@@ -14,4 +14,5 @@ public enum SimulationEventType {
     PRICE_INCREASE,
     PRICE_DECREASE,
     CUSTOM
-    }
+
+}

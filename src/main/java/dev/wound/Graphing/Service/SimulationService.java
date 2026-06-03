@@ -36,13 +36,15 @@ public class SimulationService {
         }
         UUID graphId = workspace.getGraphId();
         if (graphId == null) {
-            throw new IllegalArgumentException("Workspace with ID " + input.getWorkspaceId() + " does not have an associated graph.");
+            throw new IllegalArgumentException(
+                    "Workspace with ID " + input.getWorkspaceId() + " does not have an associated graph.");
         }
 
         // Fetch nodes belonging to the workspace graph
         List<GraphNode> workspaceNodes = nodeRepo.findByGraphKey(graphId);
         if (workspaceNodes.isEmpty()) {
-            throw new IllegalArgumentException("No nodes found in the workspace graph. Simulation cannot be performed.");
+            throw new IllegalArgumentException(
+                    "No nodes found in the workspace graph. Simulation cannot be performed.");
         }
 
         // Dynamically find trigger node
@@ -50,11 +52,13 @@ public class SimulationService {
         if (input.getTriggerNode() != null) {
             triggerNode = nodeRepo.findById(input.getTriggerNode()).orElse(null);
             if (triggerNode != null && !graphId.equals(triggerNode.getGraphKey())) {
-                throw new IllegalArgumentException("The specified trigger node does not belong to the selected workspace.");
+                throw new IllegalArgumentException(
+                        "The specified trigger node does not belong to the selected workspace.");
             }
         }
 
-        // If trigger ID is not found or not provided, pick the first available node dynamically in the workspace
+        // If trigger ID is not found or not provided, pick the first available node
+        // dynamically in the workspace
         if (triggerNode == null) {
             triggerNode = workspaceNodes.get(0);
         }
@@ -65,7 +69,8 @@ public class SimulationService {
         float baseMultiplier = getBaseMultiplier(input.getEventType());
         float decayFactor = getDecayFactor(input.getEventType());
 
-        // BFS traversal downstream along dependents (in reverse direction of DEPENDS_ON)
+        // BFS traversal downstream along dependents (in reverse direction of
+        // DEPENDS_ON)
         List<SimulationResult.AffectedNode> affectedList = new ArrayList<>();
         List<SimulationResult.CriticalPath> criticalPaths = new ArrayList<>();
         Set<String> affectedNames = new HashSet<>();
@@ -96,7 +101,8 @@ public class SimulationService {
             TraversalState current = queue.poll();
             maxDepth = Math.max(maxDepth, current.depth);
 
-            // Fetch incoming dependants (nodes that point to current node) belonging to the same workspace graph
+            // Fetch incoming dependants (nodes that point to current node) belonging to the
+            // same workspace graph
             List<GraphNode> dependents = nodeRepo.findDependentsOfNodeInGraph(current.node.getId(), graphId);
 
             for (GraphNode dep : dependents) {
@@ -108,7 +114,8 @@ public class SimulationService {
                 float weight = 0.8f;
                 if (dep.getDependencies() != null) {
                     weight = (float) dep.getDependencies().stream()
-                            .filter(edge -> edge.getTarget() != null && edge.getTarget().getId().equals(current.node.getId()))
+                            .filter(edge -> edge.getTarget() != null
+                                    && edge.getTarget().getId().equals(current.node.getId()))
                             .mapToDouble(edge -> edge.getWeight() != null ? edge.getWeight() : 0.8)
                             .findFirst()
                             .orElse(0.8);
@@ -145,8 +152,7 @@ public class SimulationService {
                         riskLevel,
                         newPath,
                         alternativePaths,
-                        Math.round(mitigationScore * 100f) / 100f
-                ));
+                        Math.round(mitigationScore * 100f) / 100f));
 
                 // Build critical paths dynamically from real traversal
                 if (impactScore > 0.5f) {
@@ -159,8 +165,7 @@ public class SimulationService {
                             "cp_" + (criticalPaths.size() + 1),
                             pathNodes,
                             Math.round(impactScore * 100f) / 100f,
-                            current.depth == 0 ? "DIRECT_DEPENDENCY" : "INDIRECT_DEPENDENCY"
-                    ));
+                            current.depth == 0 ? "DIRECT_DEPENDENCY" : "INDIRECT_DEPENDENCY"));
                 }
 
                 queue.add(new TraversalState(dep, newPath, nextStrength, current.depth + 1));
@@ -173,18 +178,18 @@ public class SimulationService {
         SimulationResult.ImpactAnalysis impactAnalysis = new SimulationResult.ImpactAnalysis(
                 totalAffected,
                 maxDepth,
-                Math.round(avgStrength * 100f) / 100f
-        );
+                Math.round(avgStrength * 100f) / 100f);
 
         // 3. System Insights dynamically from actual graph topology
-        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(triggerName, graphId);
+        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(triggerName);
 
         List<String> riskHotspots = new ArrayList<>();
         for (SimulationResult.AffectedNode an : affectedList) {
             if ("CRITICAL".equals(an.getRiskLevel()) || "HIGH".equals(an.getRiskLevel())) {
                 riskHotspots.add(an.getNode() + " (" + an.getType() + ")");
             }
-            if (riskHotspots.size() >= 5) break;
+            if (riskHotspots.size() >= 5)
+                break;
         }
         if (riskHotspots.isEmpty()) {
             riskHotspots.add(triggerName + " Dependencies");
@@ -204,8 +209,7 @@ public class SimulationService {
         SimulationResult.SystemInsights insights = new SimulationResult.SystemInsights(
                 bottlenecks,
                 riskHotspots,
-                Math.round(resilience * 100f) / 100f
-        );
+                Math.round(resilience * 100f) / 100f);
 
         // 4. Build Simulation Event dynamically
         SimulationResult.SimulationEvent simEvent = new SimulationResult.SimulationEvent(
@@ -213,8 +217,7 @@ public class SimulationService {
                 input.getEventType(),
                 triggerName,
                 input.getSeverity(),
-                LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
-        );
+                LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
 
         return new SimulationResult(simEvent, impactAnalysis, affectedList, criticalPaths, insights);
     }
@@ -275,24 +278,27 @@ public class SimulationService {
     }
 
     private String classifyRiskLevel(float impactScore) {
-        if (impactScore > 0.85f) return "CRITICAL";
-        if (impactScore > 0.65f) return "HIGH";
-        if (impactScore > 0.35f) return "MEDIUM";
+        if (impactScore > 0.85f)
+            return "CRITICAL";
+        if (impactScore > 0.65f)
+            return "HIGH";
+        if (impactScore > 0.35f)
+            return "MEDIUM";
         return "LOW";
     }
 
-    private List<SimulationResult.BottleneckNode> buildBottlenecks(String triggerName, UUID graphId) {
+    private List<SimulationResult.BottleneckNode> buildBottlenecks(String triggerName) {
         List<SimulationResult.BottleneckNode> bottlenecks = new ArrayList<>();
         try {
-            List<CentralNode> centralNodes = queryRepo.findBottlenecksInGraph(graphId);
+            List<CentralNode> centralNodes = queryRepo.findBottlenecks();
             if (centralNodes != null) {
                 for (CentralNode cn : centralNodes) {
-                    if (bottlenecks.size() >= 3) break;
+                    if (bottlenecks.size() >= 3)
+                        break;
                     bottlenecks.add(new SimulationResult.BottleneckNode(
                             cn.getName(),
                             cn.getScore() != null ? cn.getScore().floatValue() : 0.5f,
-                            0.75f
-                    ));
+                            0.75f));
                 }
             }
         } catch (Exception e) {
@@ -306,15 +312,23 @@ public class SimulationService {
     }
 
     private String mapNodeTypeToLabel(NodeType type) {
-        if (type == null) return "Unknown";
+        if (type == null)
+            return "Unknown";
         switch (type) {
-            case COMPANY: return "Company";
-            case SUPPLIER: return "Supplier";
-            case RESOURCE: return "Resource";
-            case PRODUCT: return "Product";
-            case COUNTRY: return "Country";
-            case MARKET: return "Market";
-            default: return "Entity";
+            case COMPANY:
+                return "Company";
+            case SUPPLIER:
+                return "Supplier";
+            case RESOURCE:
+                return "Resource";
+            case PRODUCT:
+                return "Product";
+            case COUNTRY:
+                return "Country";
+            case MARKET:
+                return "Market";
+            default:
+                return "Entity";
         }
     }
 }
