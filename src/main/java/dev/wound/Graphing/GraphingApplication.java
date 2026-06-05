@@ -1,3 +1,4 @@
+
 package dev.wound.Graphing;
 
 import org.springframework.boot.SpringApplication;

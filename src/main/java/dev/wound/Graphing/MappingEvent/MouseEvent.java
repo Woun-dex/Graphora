@@ -15,5 +15,6 @@ public class MouseEvent {
     private String username;
     private double x;
     private double y;
+    private String viewType; // "graph" | "whiteboard"
     private String timestamp;
 }

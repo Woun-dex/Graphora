@@ -7,18 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GraphEvent {
-    public enum Action {
-        NODE_CREATED,
-        NODE_UPDATED,
-        NODE_DELETED,
-        EDGE_ADDED,
-        EDGE_REMOVED
-    }
-
+public class DrawEvent {
     private String workspaceId;
     private String senderId;
-    private Action action;
-    private Object payload;
+    private String type;
+    private double x;
+    private double y;
+    private String color;
+    private int size;
     private String timestamp;
 }
