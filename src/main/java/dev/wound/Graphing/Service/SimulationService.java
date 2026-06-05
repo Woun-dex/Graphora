@@ -181,7 +181,7 @@ public class SimulationService {
                 Math.round(avgStrength * 100f) / 100f);
 
         // 3. System Insights dynamically from actual graph topology
-        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(triggerName);
+        List<SimulationResult.BottleneckNode> bottlenecks = buildBottlenecks(graphId, triggerName);
 
         List<String> riskHotspots = new ArrayList<>();
         for (SimulationResult.AffectedNode an : affectedList) {
@@ -287,10 +287,10 @@ public class SimulationService {
         return "LOW";
     }
 
-    private List<SimulationResult.BottleneckNode> buildBottlenecks(String triggerName) {
+    private List<SimulationResult.BottleneckNode> buildBottlenecks(UUID graphKey, String triggerName) {
         List<SimulationResult.BottleneckNode> bottlenecks = new ArrayList<>();
         try {
-            List<CentralNode> centralNodes = queryRepo.findBottlenecks();
+            List<CentralNode> centralNodes = queryRepo.findBottlenecksInGraph(graphKey);
             if (centralNodes != null) {
                 for (CentralNode cn : centralNodes) {
                     if (bottlenecks.size() >= 3)

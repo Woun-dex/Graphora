@@ -9,6 +9,9 @@ import dev.wound.Graphing.MappingEvent.MessageEvent;
 import dev.wound.Graphing.MappingEvent.MouseEvent;
 import dev.wound.Graphing.Service.GraphService;
 import dev.wound.Graphing.Service.WorkspaceService;
+import dev.wound.Graphing.Service.SimulationService;
+import dev.wound.Graphing.MappingEvent.SimulationInput;
+import dev.wound.Graphing.MappingEvent.SimulationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -27,6 +30,7 @@ public class WebSocketController {
 
     private final GraphService graphService;
     private final WorkspaceService workspaceService;
+    private final SimulationService simulationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MessageMapping("/workspace/{workspaceId}/cursor")
@@ -99,6 +103,8 @@ public class WebSocketController {
                     );
                     event.setPayload(nodeWithRemovedEdge);
                     break;
+                case SIMULATION_CLEARED:
+                    break;
                 default:
                     log.warn("Unknown graph action: {}", event.getAction());
                     break;
@@ -115,5 +121,14 @@ public class WebSocketController {
     public DrawEvent handleDraw(@DestinationVariable String workspaceId, @Payload DrawEvent event) {
         log.debug("Received draw event for workspace {}: type={}", workspaceId, event.getType());
         return event;
+    }
+
+    @MessageMapping("/workspace/{workspaceId}/simulation")
+    @SendTo("/topic/workspace/{workspaceId}/simulation")
+    public SimulationResult handleSimulation(@DestinationVariable String workspaceId, @Payload SimulationInput event) {
+        log.info("Received simulation request via WebSocket for workspace {}: triggerNode={}, eventType={}, severity={}", 
+            workspaceId, event.getTriggerNode(), event.getEventType(), event.getSeverity());
+        event.setWorkspaceId(workspaceId);
+        return simulationService.runSimulation(event);
     }
 }

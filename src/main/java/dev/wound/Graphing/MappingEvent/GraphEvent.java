@@ -13,7 +13,8 @@ public class GraphEvent {
         NODE_UPDATED,
         NODE_DELETED,
         EDGE_ADDED,
-        EDGE_REMOVED
+        EDGE_REMOVED,
+        SIMULATION_CLEARED
     }
 
     private String workspaceId;
