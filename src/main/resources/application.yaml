@@ -3,7 +3,11 @@ spring:
     name: Graphing
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/graphora}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/graphora?uuidRepresentation=standard}
+      uuid-representation: standard
+  mongodb:
+    uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/graphora?uuidRepresentation=standard}
+    uuid-representation: standard
   neo4j:
     uri: ${SPRING_NEO4J_URI:bolt://localhost:7687}
     authentication:
